@@ -17,7 +17,7 @@ use {
   },
 };
 
-pub(crate) struct EngineCore {
+pub struct EngineCore {
   config: EngineConfig,
 
   state: Arc<RwLock<Arc<EngineState>>>,

@@ -1,7 +1,7 @@
 use {crate::engine::core::EngineCore, std::sync::Arc};
 
 #[path = "./memtable/memtable.rs"]
-pub mod memtable;
+mod memtable;
 
 mod core;
 pub mod iterator;

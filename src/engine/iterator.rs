@@ -3,7 +3,7 @@ use crate::engine::{
 };
 
 // A cursor based iterator.
-pub(crate) trait Iterator {
+pub trait Iterator {
   // Returns the key of the key-value pair, the cursor is currently pointing to.
   fn key(&self) -> &[u8];
 
@@ -24,7 +24,7 @@ pub(crate) trait Iterator {
 // A safe wrapper around an iterator that implements the Iterator trait.
 // It is similar to the FusedIterator provided by Rust's standard library :
 // .next() continues to yield None, when the underlying iterator points to invalid data.
-pub(crate) struct FusedIterator<I: Iterator> {
+pub struct FusedIterator<I: Iterator> {
   iterator: I,
 }
 
@@ -49,7 +49,7 @@ impl<I: Iterator> FusedIterator<I> {
   }
 }
 
-pub(crate) mod merge_iterator {
+pub mod merge_iterator {
   use {
     super::*,
     std::{
@@ -66,7 +66,7 @@ pub(crate) mod merge_iterator {
   // it holds.
   //
   // NOTE : We want to avoid dynamic dispatch, so we use static dispatch using generics.
-  pub(crate) struct MergeIterator<I: Iterator> {
+  pub struct MergeIterator<I: Iterator> {
     binaryMinHeap: BinaryHeap<BinaryMinHeapNodeData<I>>,
     poppedNode:    Option<BinaryMinHeapNodeData<I>>,
   }
@@ -224,14 +224,14 @@ pub(crate) mod merge_iterator {
   impl<I: Iterator> Eq for BinaryMinHeapNodeData<I> {}
 }
 
-pub(crate) type MemtablesIterator = MergeIterator<MemtableIterator>;
+pub type MemtablesIterator = MergeIterator<MemtableIterator>;
 
-pub(crate) struct EngineIterator {
+pub struct EngineIterator {
   memtablesIterator: MemtablesIterator,
 }
 
 impl EngineIterator {
-  pub(crate) fn new(memtablesIterator: MemtablesIterator) -> Self {
+  pub fn new(memtablesIterator: MemtablesIterator) -> Self {
     Self { memtablesIterator }
   }
 }

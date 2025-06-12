@@ -10,21 +10,21 @@ type SkipMapRangeIterator<'a> =
   crossbeam_skiplist::map::Range<'a, Bytes, (Bound<Bytes>, Bound<Bytes>), Bytes, Bytes>;
 
 #[self_referencing(pub_extras)]
-pub(crate) struct MemtableIterator {
+pub struct MemtableIterator {
   // Instead of doing "skipMap: &'skipMap SkipMap<Bytes, Bytes>", we do the following,
   // to avoid complications coming with the lifetime usage. This will also improve the
   // compile time.
-  pub(super) skipMap: Arc<SkipMap<Bytes, Bytes>>,
+  pub skipMap: Arc<SkipMap<Bytes, Bytes>>,
 
   #[borrows(skipMap)]
   // TODO : Understand why we mark this as not covariant.
   #[not_covariant]
-  pub(super) skipMapIterator: SkipMapRangeIterator<'this>,
+  pub skipMapIterator: SkipMapRangeIterator<'this>,
 
   // key-value pair the iterator's cursor is currently pointing to.
   //
   // If the key and value are empty bytes, that means the iterator is invalid.
-  pub(super) currentKVPair: (Bytes, Bytes),
+  pub currentKVPair: (Bytes, Bytes),
 }
 
 impl Iterator for MemtableIterator {
