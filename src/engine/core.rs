@@ -1,9 +1,15 @@
 use {
-  crate::engine::{EngineConfig, memtable::Memtable, state::EngineState},
+  crate::engine::{
+    EngineConfig,
+    iterator::{EngineIterator, FusedIterator, merge_iterator::MergeIterator},
+    memtable::Memtable,
+    state::EngineState,
+  },
   bytes::Bytes,
   parking_lot::{Mutex, MutexGuard, RwLock},
   std::{
     mem,
+    ops::Bound,
     sync::{
       Arc,
       atomic::{AtomicUsize, Ordering},
@@ -50,6 +56,35 @@ impl EngineCore {
     drop(stateReadLockGuard);
 
     None
+  }
+
+  pub fn scan(
+    &self,
+    lowerBound: Bound<&[u8]>,
+    upperBound: Bound<&[u8]>,
+  ) -> FusedIterator<EngineIterator> {
+    let stateReadLockGuard = self.state.read();
+    let state = Arc::clone(&stateReadLockGuard);
+
+    // Since scan() may take good amount of time,
+    // we want to drop the read lock sooner.
+    // NOTE : But, state can be mutated from other threads, while scan() is running.
+    //        Most probably, this problem will be addresses in the future.
+    drop(stateReadLockGuard);
+
+    let mut memtableIterators = Vec::with_capacity(1 + state.immutableMemtables.len());
+
+    memtableIterators.push(state.mutableMemtable.scan(lowerBound, upperBound));
+
+    for immutableMemtable in state.immutableMemtables.iter() {
+      memtableIterators.push(immutableMemtable.scan(lowerBound, upperBound));
+    }
+
+    let memtablesIterator = MergeIterator::new(memtableIterators);
+
+    let engineIterator = EngineIterator::new(memtablesIterator);
+
+    FusedIterator::new(engineIterator)
   }
 
   pub fn put(&self, key: &[u8], value: &[u8]) {
