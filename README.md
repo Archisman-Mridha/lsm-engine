@@ -4,6 +4,8 @@
 
 - Use [`parking_lot::RwLock`](https://amanieu.github.io/parking_lot/parking_lot/struct.RwLock.html) instead of the RwLock implementation provided by the standard library, since it **considers fairness** and **automatically unlocks a poisoned lock**.
 
+- Position is tracked when reading from `&[u8]` (like in case of [get_u16](https://docs.rust-embedded.org/rust-sysfs-gpio/bytes/buf/trait.Buf.html#method.get_u16)).
+
 ## REFERENCEs
 
 - [7. Randomization: Skip Lists](https://www.youtube.com/watch?v=2g9OSRKJuzM)

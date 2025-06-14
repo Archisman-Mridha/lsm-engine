@@ -1,7 +1,7 @@
 use {
   crate::engine::{
     EngineConfig,
-    iterator::{EngineIterator, FusedIterator, merge_iterator::MergeIterator},
+    iterator::{EngineIterator, fused_iterator::FusedIterator, merge_iterator::MergeIterator},
     memtable::Memtable,
     state::EngineState,
   },
@@ -179,6 +179,8 @@ impl EngineCore {
     let newMutableMemtableID = self.nextMutableMemtableID.fetch_add(1, Ordering::Relaxed);
     let newMutableMemtable = Arc::new(Memtable::create(newMutableMemtableID));
 
+    // TODO : Understand why we clone the state, do our mutations and swap it with the old state,
+    //        instead of just mutating the old state.
     {
       let mut stateWriteLockGuard = self.state.write();
 

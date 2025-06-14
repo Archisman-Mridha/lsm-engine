@@ -3,6 +3,9 @@ use {crate::engine::core::EngineCore, std::sync::Arc};
 #[path = "./memtable/memtable.rs"]
 mod memtable;
 
+#[path = "./sstable/sstable.rs"]
+mod sstable;
+
 mod core;
 pub mod iterator;
 mod state;
