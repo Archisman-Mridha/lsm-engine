@@ -6,6 +6,8 @@ use {
 pub mod builder;
 pub mod iterator;
 
+pub mod metadata;
+
 const U16_SIZE: usize = mem::size_of::<u16>();
 
 // The basic unit of the on-disk structure is blocks.

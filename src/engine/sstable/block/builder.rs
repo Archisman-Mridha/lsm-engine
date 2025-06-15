@@ -23,8 +23,8 @@ impl BlockBuilder {
     self.rawEntries.len() + (self.offsets.len() * U16_SIZE) + (/* entry count */U16_SIZE)
   }
 
-  #[must_use = "atleast one entry must be inserted into the block"]
-  pub fn insertEntry(&mut self, key: &[u8], value: &[u8]) -> anyhow::Result<()> {
+  #[must_use = "atleast one key-value pair must be inserted into the block"]
+  pub fn insertKVPair(&mut self, key: &[u8], value: &[u8]) -> anyhow::Result<()> {
     // Calculate what the block size will be after we insert the entry.
     let postInsertionBlockSize =
       self.currentBlockSize() + ((U16_SIZE + key.len()) + (U16_SIZE + value.len()) + U16_SIZE);
