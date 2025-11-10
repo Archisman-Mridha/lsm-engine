@@ -5,58 +5,58 @@ use {
 };
 
 pub struct BlockBuilder {
-  rawEntries:   Vec<u8>,
-  offsets:      Vec<u16>,
-  maxBlockSize: usize,
+  raw_entries:    Vec<u8>,
+  offsets:        Vec<u16>,
+  max_block_size: usize,
 }
 
 impl BlockBuilder {
-  pub fn new(maxBlockSize: usize) -> Self {
+  pub fn new(max_block_size: usize) -> Self {
     Self {
-      rawEntries: Vec::new(),
+      raw_entries: Vec::new(),
       offsets: Vec::new(),
-      maxBlockSize,
+      max_block_size,
     }
   }
 
-  pub fn currentBlockSize(&self) -> usize {
-    self.rawEntries.len() + (self.offsets.len() * U16_SIZE) + (/* entry count */U16_SIZE)
+  pub fn current_block_size(&self) -> usize {
+    self.raw_entries.len() + (self.offsets.len() * U16_SIZE) + (/* entry count */U16_SIZE)
   }
 
   #[must_use = "atleast one key-value pair must be inserted into the block"]
-  pub fn insertKVPair(&mut self, key: &[u8], value: &[u8]) -> anyhow::Result<()> {
+  pub fn insert_kv_pair(&mut self, key: &[u8], value: &[u8]) -> anyhow::Result<()> {
     // Calculate what the block size will be after we insert the entry.
-    let postInsertionBlockSize =
-      self.currentBlockSize() + ((U16_SIZE + key.len()) + (U16_SIZE + value.len()) + U16_SIZE);
+    let post_insertion_block_size =
+      self.current_block_size() + ((U16_SIZE + key.len()) + (U16_SIZE + value.len()) + U16_SIZE);
 
     // If the post insertion block size is greater than the allowed max block size,
     // then we cannot insert the entry.
-    if postInsertionBlockSize > self.maxBlockSize {
+    if post_insertion_block_size > self.max_block_size {
       bail!("Inserting this KV pair will violate the maximum block size constraint.");
     }
 
     // Insert the entry into the block.
 
-    let rawEntryOffset = self.rawEntries.len();
-    self.offsets.push(rawEntryOffset as u16);
+    let raw_entry_offset = self.raw_entries.len();
+    self.offsets.push(raw_entry_offset as u16);
 
-    self.rawEntries.put_u16(key.len() as u16);
-    self.rawEntries.put(key);
+    self.raw_entries.put_u16(key.len() as u16);
+    self.raw_entries.put(key);
 
-    self.rawEntries.put_u16(value.len() as u16);
-    self.rawEntries.put(value);
+    self.raw_entries.put_u16(value.len() as u16);
+    self.raw_entries.put(value);
 
     Ok(())
   }
 
   pub fn build(self) -> Block {
-    if self.rawEntries.is_empty() {
+    if self.raw_entries.is_empty() {
       panic!("Block has no entries. Consider an increased maximum block size.");
     }
 
     Block {
-      rawEntries: self.rawEntries,
-      offsets:    self.offsets,
+      raw_entries: self.raw_entries,
+      offsets:     self.offsets,
     }
   }
 }

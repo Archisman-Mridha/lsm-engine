@@ -13,38 +13,42 @@ pub struct SSTableBuilder {
   // (encoded) blocks | (encoded) block metadatas | (encoded) block metadatas offset.
   data: Vec<u8>,
 
-  blockMetadatas: Vec<BlockMetadata>,
+  block_metadatas: Vec<BlockMetadata>,
 
-  maxBlockSize: usize,
+  max_block_size: usize,
 
-  currentBlockBuilder:  BlockBuilder,
-  currentBlockFirstKey: Vec<u8>,
-  currentBlockLastKey:  Vec<u8>,
+  current_block_builder:   BlockBuilder,
+  current_block_first_key: Vec<u8>,
+  current_block_last_key:  Vec<u8>,
 }
 
 impl SSTableBuilder {
-  pub fn new(maxBlockSize: usize) -> Self {
+  pub fn new(max_block_size: usize) -> Self {
     Self {
       data: Vec::new(),
-      blockMetadatas: Vec::new(),
+      block_metadatas: Vec::new(),
 
-      maxBlockSize,
+      max_block_size,
 
-      currentBlockBuilder: BlockBuilder::new(maxBlockSize),
-      currentBlockFirstKey: Vec::new(),
-      currentBlockLastKey: Vec::new(),
+      current_block_builder: BlockBuilder::new(max_block_size),
+      current_block_first_key: Vec::new(),
+      current_block_last_key: Vec::new(),
     }
   }
 
-  pub fn insertKVPair(&mut self, key: &[u8], value: &[u8]) {
-    if self.currentBlockFirstKey.is_empty() {
-      self.currentBlockFirstKey.clear();
-      self.currentBlockFirstKey.extend(key);
+  pub fn insert_kv_pair(&mut self, key: &[u8], value: &[u8]) {
+    if self.current_block_first_key.is_empty() {
+      self.current_block_first_key.clear();
+      self.current_block_first_key.extend(key);
     }
 
-    if self.currentBlockBuilder.insertKVPair(key, value).is_ok() {
-      self.currentBlockLastKey.clear();
-      self.currentBlockLastKey.extend(key);
+    if self
+      .current_block_builder
+      .insert_kv_pair(key, value)
+      .is_ok()
+    {
+      self.current_block_last_key.clear();
+      self.current_block_last_key.extend(key);
 
       return;
     }
@@ -52,83 +56,88 @@ impl SSTableBuilder {
     // Current block which is being built, has reached it's size limit.
     // So, we need to finish building that block and include it in the SSTable.
     // And instead, start using a new block for inserting this and any further key-value pairs.
-    self.buildCurrentBlock();
+    self.build_current_block();
 
     // Finally, insert the key-value pair into the new block.
-    // NOTE : We could've recursively called self.insertKVPair( ), but we want to make sure that
+    // NOTE : We could've recursively called self.insert_kv_pair( ), but we want to make sure that
     //        atleast 1 key-value pair gets inserted into the new block.
     //        Otherwise, we'll be stuck in an infinite recursion, creating and finalizing an empty
     //        block everytime.
-    assert!(self.currentBlockBuilder.insertKVPair(key, value).is_ok());
+    assert!(
+      self
+        .current_block_builder
+        .insert_kv_pair(key, value)
+        .is_ok()
+    );
 
-    self.currentBlockFirstKey.clear();
-    self.currentBlockFirstKey.extend(key);
+    self.current_block_first_key.clear();
+    self.current_block_first_key.extend(key);
 
-    self.currentBlockLastKey.clear();
-    self.currentBlockLastKey.extend(key);
+    self.current_block_last_key.clear();
+    self.current_block_last_key.extend(key);
   }
 
   // Finishes building the current block and adds it to the SSTable.
   // Instead creates a new block where further key-value pairs will be inserted.
-  fn buildCurrentBlock(&mut self) {
+  fn build_current_block(&mut self) {
     // Create the new block builder.
-    let newBlockBuilder = BlockBuilder::new(self.maxBlockSize);
-    let oldBlockBuilder = mem::replace(&mut self.currentBlockBuilder, newBlockBuilder);
+    let new_block_builder = BlockBuilder::new(self.max_block_size);
+    let old_block_builder = mem::replace(&mut self.current_block_builder, new_block_builder);
 
     // Finish building the old block.
-    let oldBlock = oldBlockBuilder.build();
+    let old_block = old_block_builder.build();
 
     // Include the old block in the SSTable.
 
-    self.blockMetadatas.push(BlockMetadata {
+    self.block_metadatas.push(BlockMetadata {
       offset: self.data.len() as u64,
 
-      firstKey: mem::take(&mut self.currentBlockFirstKey).into(),
-      lastKey:  mem::take(&mut self.currentBlockLastKey).into(),
+      first_key: mem::take(&mut self.current_block_first_key).into(),
+      last_key:  mem::take(&mut self.current_block_last_key).into(),
     });
 
-    self.data.extend(oldBlock.encode());
+    self.data.extend(old_block.encode());
   }
 
   pub fn build(mut self, id: usize, file: SSTableFile) -> SSTable {
     // Finish building the last block.
-    self.buildCurrentBlock();
+    self.build_current_block();
 
-    let blockMetadataEncodingsOffset = self.data.len() as u64;
+    let block_metadata_encodings_offset = self.data.len() as u64;
 
     // We have already added block encodings.
 
     // Add metadata encodings.
     {
       // Calculate the total size required by the block metadata encodings.
-      let mut blockMetadataEncodingsSize = 0;
-      for blockMetadata in &self.blockMetadatas {
-        blockMetadataEncodingsSize += blockMetadata.encodingSize();
+      let mut block_metadata_encodings_size = 0;
+      for block_metadata in &self.block_metadatas {
+        block_metadata_encodings_size += block_metadata.encoding_size();
       }
 
       // Expand the capacity of self.data by that amount.
       // So, we avoided multiple small allocations :).
-      self.data.reserve(blockMetadataEncodingsSize);
+      self.data.reserve(block_metadata_encodings_size);
 
       // Write block metadata encodings into self.data.
-      for blockMetadata in &self.blockMetadatas {
-        blockMetadata.encode(&mut self.data);
+      for block_metadata in &self.block_metadatas {
+        block_metadata.encode(&mut self.data);
       }
     }
 
     // Add metadata encodings offset.
-    self.data.put_u64(blockMetadataEncodingsOffset);
+    self.data.put_u64(block_metadata_encodings_offset);
 
     SSTable {
       id,
 
       file,
 
-      firstKey: self.blockMetadatas.first().unwrap().firstKey.clone(),
-      lastKey: self.blockMetadatas.last().unwrap().lastKey.clone(),
+      first_key: self.block_metadatas.first().unwrap().first_key.clone(),
+      last_key: self.block_metadatas.last().unwrap().last_key.clone(),
 
-      blockMetadatas: self.blockMetadatas,
-      blockMetadataEncodingsOffset,
+      block_metadatas: self.block_metadatas,
+      block_metadata_encodings_offset,
     }
   }
 }

@@ -15,7 +15,7 @@ pub struct EngineConfig {
   //
   // This decides the memtable size limit as well. When a mutable memtable becomes of this size,
   // it is frozen, and flushed to the disk in the form of an SSTable.
-  sstableSize: usize,
+  sstable_size: usize,
 }
 
 pub struct Engine {

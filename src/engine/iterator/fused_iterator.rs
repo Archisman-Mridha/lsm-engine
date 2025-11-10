@@ -13,14 +13,14 @@ impl<I: Iterator> FusedIterator<I> {
   }
 
   pub fn next(&mut self) -> Option<(&[u8], &[u8])> {
-    if !self.iterator.isValid() {
+    if !self.iterator.is_valid() {
       return None;
     }
 
     match self.iterator.next() {
-      Ok(_) if self.iterator.isValid() => {
-        let kvPair = (self.iterator.key(), self.iterator.value());
-        Some(kvPair)
+      Ok(_) if self.iterator.is_valid() => {
+        let kv_pair = (self.iterator.key(), self.iterator.value());
+        Some(kv_pair)
       }
 
       _ => None,

@@ -15,7 +15,7 @@ const U16_SIZE: usize = mem::size_of::<u16>();
 // Blocks are usually of 4-KB size (the size may vary depending on the storage medium), which is
 // equivalent to the page size in the operating system and the page size on an SSD.
 pub struct Block {
-  rawEntries: Vec<u8>,
+  raw_entries: Vec<u8>,
 
   // Offset of each entry.
   offsets: Vec<u16>,
@@ -24,9 +24,9 @@ pub struct Block {
 impl Block {
   pub fn encode(&self) -> Bytes {
     // Encode the raw entries.
-    let mut encoding = self.rawEntries.clone();
+    let mut encoding = self.raw_entries.clone();
 
-    let entryCount = self.offsets.len() as u16;
+    let entry_count = self.offsets.len() as u16;
 
     // Encode the offsets.
     for offset in self.offsets.iter() {
@@ -34,7 +34,7 @@ impl Block {
     }
 
     // Encode the entry count.
-    encoding.put_u16(entryCount);
+    encoding.put_u16(entry_count);
 
     encoding.into()
   }
@@ -42,21 +42,21 @@ impl Block {
   pub fn decode(encoding: &[u8]) -> Self {
     // Last 2 bytes of the encoding, stores the entry count.
     // So, let's get that first.
-    let entryCountStartsAt = encoding.len() - U16_SIZE;
-    let entryCount = (&encoding[entryCountStartsAt..]).get_u16() as usize;
+    let entry_count_starts_at = encoding.len() - U16_SIZE;
+    let entry_count = (&encoding[entry_count_starts_at..]).get_u16() as usize;
 
     // Get the offsets.
-    let offsetsStartAt = entryCountStartsAt - (U16_SIZE * entryCount);
-    let offsets = encoding[offsetsStartAt..entryCountStartsAt]
+    let offsets_start_at = entry_count_starts_at - (U16_SIZE * entry_count);
+    let offsets = encoding[offsets_start_at..entry_count_starts_at]
       .chunks(U16_SIZE)
       .map(|mut chunk| chunk.get_u16())
       .collect();
 
     // Get the (raw) entries.
-    let rawEntries = encoding[0..offsetsStartAt].to_vec();
+    let raw_entries = encoding[0..offsets_start_at].to_vec();
 
     Self {
-      rawEntries,
+      raw_entries,
       offsets,
     }
   }

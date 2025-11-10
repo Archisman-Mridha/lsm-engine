@@ -11,14 +11,14 @@ pub struct BlockIterator {
   block: Arc<Block>,
 
   // Whetever entry the cursor of this iterator is currently pointing to,
-  // this is the index of that entry in self.block.rawEntries.
-  currentIndex:      usize,
+  // this is the index of that entry in self.block.raw_entries.
+  current_index:       usize,
   //
   // This is the key of that entry.
-  currentKey:        Vec<u8>,
+  current_key:         Vec<u8>,
   //
-  // And this is the byte range of the value of that entry in self.block.rawEntries.
-  currentValueRange: (usize, usize),
+  // And this is the byte range of the value of that entry in self.block.raw_entries.
+  current_value_range: (usize, usize),
 }
 
 impl BlockIterator {
@@ -26,100 +26,100 @@ impl BlockIterator {
     Self {
       block,
 
-      currentIndex: 0,
-      currentKey: Vec::new(),
-      currentValueRange: (0, 0),
+      current_index: 0,
+      current_key: Vec::new(),
+      current_value_range: (0, 0),
     }
   }
 
   // Seeks to the first key >= the given target key.
-  pub fn seekToKey(&mut self, targetKey: &Vec<u8>) {
+  pub fn seek_to_key(&mut self, target_key: &Vec<u8>) {
     // Use Binary Search to find the index of the key >= the given key,
-    // in self.block.rawEntries.
+    // in self.block.raw_entries.
 
-    let mut lowerIndex = 0;
-    let mut upperIndex = self.block.rawEntries.len();
+    let mut lower_index = 0;
+    let mut upper_index = self.block.raw_entries.len();
 
-    while lowerIndex < upperIndex {
-      let midIndex = lowerIndex + ((lowerIndex + upperIndex) / 2);
+    while lower_index < upper_index {
+      let mid_index = lower_index + ((lower_index + upper_index) / 2);
 
-      self.seekToEntryWithIndex(midIndex);
+      self.seek_to_entry_with_index(mid_index);
 
-      match self.currentKey.cmp(targetKey) {
+      match self.current_key.cmp(target_key) {
         Ordering::Equal => return,
 
-        Ordering::Less => upperIndex = midIndex - 1,
-        Ordering::Greater => lowerIndex = midIndex + 1,
+        Ordering::Less => upper_index = mid_index - 1,
+        Ordering::Greater => lower_index = mid_index + 1,
       }
     }
 
-    // At this point lowerIndex = higherIndex.
-    self.seekToEntryWithIndex(lowerIndex);
+    // At this point lower_index = higherIndex.
+    self.seek_to_entry_with_index(lower_index);
   }
 
   // Seeks to the entry with the given index.
-  pub fn seekToEntryWithIndex(&mut self, index: usize) {
-    if index >= self.block.rawEntries.len() {
-      self.currentIndex = 0;
-      self.currentKey = Vec::new();
-      self.currentValueRange = (0, 0);
+  pub fn seek_to_entry_with_index(&mut self, index: usize) {
+    if index >= self.block.raw_entries.len() {
+      self.current_index = 0;
+      self.current_key = Vec::new();
+      self.current_value_range = (0, 0);
     }
 
     let offset = self.block.offsets[index];
-    self.seekToOffset(offset);
+    self.seek_to_offset(offset);
   }
 
-  // Seeks to the entry at the given byte offset in self.rawEntries.
-  pub fn seekToOffset(&mut self, offset: u16) {
-    let mut rawEntry = &self.block.rawEntries[offset as usize..];
+  // Seeks to the entry at the given byte offset in self.raw_entries.
+  pub fn seek_to_offset(&mut self, offset: u16) {
+    let mut raw_entry = &self.block.raw_entries[offset as usize..];
 
-    let keySize = rawEntry.get_u16() as usize;
-    let key = rawEntry[..keySize].to_vec();
+    let key_size = raw_entry.get_u16() as usize;
+    let key = raw_entry[..key_size].to_vec();
     //
     // Yes, we do allocate a Vec for 'key'. But that's very short lived.
-    // Doing 'self.currentKey.extend(key)', we reuse the allocated heap memory for
-    // self.currentKey.
-    // NOTE : Doing 'self.currentKey = key', won't lead to a memory leak.
+    // Doing 'self.current_key.extend(key)', we reuse the allocated heap memory for
+    // self.current_key.
+    // NOTE : Doing 'self.current_key = key', won't lead to a memory leak.
     //
-    self.currentKey.clear();
-    self.currentKey.extend(key);
+    self.current_key.clear();
+    self.current_key.extend(key);
 
-    // Advance the internal cursor maintained in rawEntry.
-    rawEntry.advance(keySize);
+    // Advance the internal cursor maintained in raw_entry.
+    raw_entry.advance(key_size);
 
     {
-      let valueSize = rawEntry.get_u16() as usize;
+      let value_size = raw_entry.get_u16() as usize;
 
-      let currentValueOffset = (U16_SIZE + keySize) + U16_SIZE;
-      let currentValueEndsAt = currentValueOffset + valueSize;
+      let current_value_offset = (U16_SIZE + key_size) + U16_SIZE;
+      let current_value_ends_at = current_value_offset + value_size;
 
-      self.currentValueRange = (currentValueOffset, currentValueEndsAt);
+      self.current_value_range = (current_value_offset, current_value_ends_at);
 
-      // Advance the internal cursor maintained in rawEntry.
-      rawEntry.advance(valueSize);
+      // Advance the internal cursor maintained in raw_entry.
+      raw_entry.advance(value_size);
     }
   }
 }
 
 impl Iterator for BlockIterator {
   fn key(&self) -> &[u8] {
-    &self.currentKey
+    &self.current_key
   }
 
   fn value(&self) -> &[u8] {
-    let (valueOffset, valueEndsAt) = self.currentValueRange;
-    &self.block.rawEntries[valueOffset..valueEndsAt]
+    let (value_offset, value_ends_at) = self.current_value_range;
+    &self.block.raw_entries[value_offset..value_ends_at]
   }
 
   fn next(&mut self) -> anyhow::Result<()> {
-    self.currentIndex += 1;
+    self.current_index += 1;
 
-    self.seekToEntryWithIndex(self.currentIndex);
+    self.seek_to_entry_with_index(self.current_index);
 
     Ok(())
   }
 
-  fn isValid(&self) -> bool {
-    !self.currentKey.is_empty()
+  fn is_valid(&self) -> bool {
+    !self.current_key.is_empty()
   }
 }

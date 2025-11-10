@@ -23,38 +23,39 @@ pub struct SSTable {
 
   file: SSTableFile,
 
-  firstKey: Bytes,
-  lastKey:  Bytes,
+  first_key: Bytes,
+  last_key:  Bytes,
 
   // We have assumed that, all block metadata encodings can fit in memory.
   // Also, during size calculation of an SSTable, we ignore the size of block metadata encodings.
-  blockMetadatas:               Vec<BlockMetadata>,
-  blockMetadataEncodingsOffset: u64,
+  block_metadatas:                 Vec<BlockMetadata>,
+  block_metadata_encodings_offset: u64,
 }
 
 impl SSTable {
   // Returns an SSTable constructed using the contents of the given file.
-  pub fn newFromFile(id: usize, path: &Path) -> anyhow::Result<Self> {
+  pub fn new_from_file(id: usize, path: &Path) -> anyhow::Result<Self> {
     // Read data off the SSTable file.
     let file = SSTableFile::new(path)?;
 
-    let dataSize = file.size()?;
+    let data_size = file.size()?;
 
     // Determine the block metadata encodings offset.
-    let rawBlockMetadataEncodingsOffset = file.read(dataSize - U64_SIZE as u64, U64_SIZE as u64)?;
-    let blockMetadataEncodingsOffset = (&rawBlockMetadataEncodingsOffset[..]).get_u64();
+    let raw_block_metadata_encodings_offset =
+      file.read(data_size - U64_SIZE as u64, U64_SIZE as u64)?;
+    let block_metadata_encodings_offset = (&raw_block_metadata_encodings_offset[..]).get_u64();
 
     // Read block metadata encodings.
 
-    let blockMetadataEncodings = file.read(
-      blockMetadataEncodingsOffset,
-      dataSize - (blockMetadataEncodingsOffset + U64_SIZE as u64),
+    let block_metadata_encodings = file.read(
+      block_metadata_encodings_offset,
+      data_size - (block_metadata_encodings_offset + U64_SIZE as u64),
     )?;
 
-    let mut blockMetadatas = Vec::new();
-    while blockMetadataEncodings.has_remaining_mut() {
-      let blockMetadata = BlockMetadata::decode(&blockMetadataEncodings[..]);
-      blockMetadatas.push(blockMetadata);
+    let mut block_metadatas = Vec::new();
+    while block_metadata_encodings.has_remaining_mut() {
+      let block_metadata = BlockMetadata::decode(&block_metadata_encodings[..]);
+      block_metadatas.push(block_metadata);
     }
 
     Ok(Self {
@@ -62,32 +63,32 @@ impl SSTable {
 
       file,
 
-      firstKey: blockMetadatas.first().unwrap().firstKey.clone(),
-      lastKey: blockMetadatas.last().unwrap().lastKey.clone(),
+      first_key: block_metadatas.first().unwrap().first_key.clone(),
+      last_key: block_metadatas.last().unwrap().last_key.clone(),
 
-      blockMetadataEncodingsOffset,
-      blockMetadatas,
+      block_metadata_encodings_offset,
+      block_metadatas,
     })
   }
 
   // Get block at the given index.
-  pub fn readBlockAtIndex(&self, index: usize) -> anyhow::Result<Arc<Block>> {
-    let blockMetadata = &self.blockMetadatas[index];
+  pub fn read_block_at_index(&self, index: usize) -> anyhow::Result<Arc<Block>> {
+    let block_metadata = &self.block_metadatas[index];
 
-    let blockOffset = blockMetadata.offset;
-    let blockEndsAt = {
-      if index < self.blockMetadatas.len() - 1 {
-        self.blockMetadataEncodingsOffset
+    let block_offset = block_metadata.offset;
+    let block_ends_at = {
+      if index < self.block_metadatas.len() - 1 {
+        self.block_metadata_encodings_offset
       }
       else {
-        self.blockMetadatas[index + 1].offset
+        self.block_metadatas[index + 1].offset
       }
     };
-    let blockSize = blockOffset - blockEndsAt;
+    let block_size = block_offset - block_ends_at;
 
-    let rawBlock = self.file.read(blockOffset, blockSize)?;
+    let raw_block = self.file.read(block_offset, block_size)?;
 
-    let block = Block::decode(&rawBlock);
+    let block = Block::decode(&raw_block);
     Ok(Arc::new(block))
   }
 }
