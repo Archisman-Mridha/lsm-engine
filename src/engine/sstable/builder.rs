@@ -2,10 +2,10 @@ use {
   crate::engine::sstable::{
     SSTable,
     block::{builder::BlockBuilder, metadata::BlockMetadata},
-    file::SSTableFile,
+    file::SSTableFile
   },
   bytes::BufMut,
-  std::mem,
+  std::mem
 };
 
 pub struct SSTableBuilder {
@@ -19,21 +19,19 @@ pub struct SSTableBuilder {
 
   current_block_builder:   BlockBuilder,
   current_block_first_key: Vec<u8>,
-  current_block_last_key:  Vec<u8>,
+  current_block_last_key:  Vec<u8>
 }
 
 impl SSTableBuilder {
   pub fn new(max_block_size: usize) -> Self {
-    Self {
-      data: Vec::new(),
-      block_metadatas: Vec::new(),
+    Self { data: Vec::new(),
+           block_metadatas: Vec::new(),
 
-      max_block_size,
+           max_block_size,
 
-      current_block_builder: BlockBuilder::new(max_block_size),
-      current_block_first_key: Vec::new(),
-      current_block_last_key: Vec::new(),
-    }
+           current_block_builder: BlockBuilder::new(max_block_size),
+           current_block_first_key: Vec::new(),
+           current_block_last_key: Vec::new() }
   }
 
   pub fn insert_kv_pair(&mut self, key: &[u8], value: &[u8]) {
@@ -42,11 +40,7 @@ impl SSTableBuilder {
       self.current_block_first_key.extend(key);
     }
 
-    if self
-      .current_block_builder
-      .insert_kv_pair(key, value)
-      .is_ok()
-    {
+    if self.current_block_builder.insert_kv_pair(key, value).is_ok() {
       self.current_block_last_key.clear();
       self.current_block_last_key.extend(key);
 
@@ -63,12 +57,7 @@ impl SSTableBuilder {
     //        atleast 1 key-value pair gets inserted into the new block.
     //        Otherwise, we'll be stuck in an infinite recursion, creating and finalizing an empty
     //        block everytime.
-    assert!(
-      self
-        .current_block_builder
-        .insert_kv_pair(key, value)
-        .is_ok()
-    );
+    assert!(self.current_block_builder.insert_kv_pair(key, value).is_ok());
 
     self.current_block_first_key.clear();
     self.current_block_first_key.extend(key);
@@ -128,16 +117,14 @@ impl SSTableBuilder {
     // Add metadata encodings offset.
     self.data.put_u64(block_metadata_encodings_offset);
 
-    SSTable {
-      id,
+    SSTable { id,
 
-      file,
+              file,
 
-      first_key: self.block_metadatas.first().unwrap().first_key.clone(),
-      last_key: self.block_metadatas.last().unwrap().last_key.clone(),
+              first_key: self.block_metadatas.first().unwrap().first_key.clone(),
+              last_key: self.block_metadatas.last().unwrap().last_key.clone(),
 
-      block_metadatas: self.block_metadatas,
-      block_metadata_encodings_offset,
-    }
+              block_metadatas: self.block_metadatas,
+              block_metadata_encodings_offset }
   }
 }

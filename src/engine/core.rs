@@ -3,7 +3,7 @@ use {
     EngineConfig,
     iterator::{EngineIterator, fused_iterator::FusedIterator, merge_iterator::MergeIterator},
     memtable::Memtable,
-    state::EngineState,
+    state::EngineState
   },
   bytes::Bytes,
   parking_lot::{Mutex, MutexGuard, RwLock},
@@ -12,9 +12,9 @@ use {
     ops::Bound,
     sync::{
       Arc,
-      atomic::{AtomicUsize, Ordering},
-    },
-  },
+      atomic::{AtomicUsize, Ordering}
+    }
+  }
 };
 
 pub struct EngineCore {
@@ -23,7 +23,7 @@ pub struct EngineCore {
   state: Arc<RwLock<Arc<EngineState>>>,
 
   mutable_memtable_freezer_lock: Mutex<()>,
-  next_mutable_memtable_id:      AtomicUsize,
+  next_mutable_memtable_id:      AtomicUsize
 }
 
 impl EngineCore {
@@ -58,11 +58,10 @@ impl EngineCore {
     None
   }
 
-  pub fn scan(
-    &self,
-    lower_bound: Bound<&[u8]>,
-    upper_bound: Bound<&[u8]>,
-  ) -> FusedIterator<EngineIterator> {
+  pub fn scan(&self,
+              lower_bound: Bound<&[u8]>,
+              upper_bound: Bound<&[u8]>)
+              -> FusedIterator<EngineIterator> {
     let state_read_lock_guard = self.state.read();
     let state = Arc::clone(&state_read_lock_guard);
 
@@ -88,10 +87,7 @@ impl EngineCore {
   }
 
   pub fn put(&self, key: &[u8], value: &[u8]) {
-    assert!(
-      (!key.is_empty() && !value.is_empty()),
-      "key and value cannot be empty"
-    );
+    assert!((!key.is_empty() && !value.is_empty()), "key and value cannot be empty");
 
     let mutable_memtable_size_after_put: usize;
 
@@ -176,9 +172,7 @@ impl EngineCore {
   // regardless of whether it has reached the size limit or not.
   fn freeze_mutable_memtable(&self, _mutable_memtable_freezer_lock_guard: &MutexGuard<()>) {
     // Create the new mutable memtable.
-    let new_mutable_memtable_id = self
-      .next_mutable_memtable_id
-      .fetch_add(1, Ordering::Relaxed);
+    let new_mutable_memtable_id = self.next_mutable_memtable_id.fetch_add(1, Ordering::Relaxed);
     let new_mutable_memtable = Arc::new(Memtable::create(new_mutable_memtable_id));
 
     // TODO : Understand why we clone the state, do our mutations and swap it with the old state,
@@ -194,9 +188,7 @@ impl EngineCore {
         mem::replace(&mut new_state.mutable_memtable, new_mutable_memtable);
 
       // Mark the old mutable memtable as frozen.
-      new_state
-        .immutable_memtables
-        .insert(0, old_mutable_memtable);
+      new_state.immutable_memtables.insert(0, old_mutable_memtable);
 
       // Swap the old Engine_state with the new Engine_state.
       *state_write_lock_guard = Arc::new(new_state);

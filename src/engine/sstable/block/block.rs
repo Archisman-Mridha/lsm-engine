@@ -1,6 +1,6 @@
 use {
   bytes::{Buf, BufMut, Bytes},
-  std::mem,
+  std::mem
 };
 
 pub mod builder;
@@ -18,7 +18,7 @@ pub struct Block {
   raw_entries: Vec<u8>,
 
   // Offset of each entry.
-  offsets: Vec<u16>,
+  offsets: Vec<u16>
 }
 
 impl Block {
@@ -47,17 +47,14 @@ impl Block {
 
     // Get the offsets.
     let offsets_start_at = entry_count_starts_at - (U16_SIZE * entry_count);
-    let offsets = encoding[offsets_start_at..entry_count_starts_at]
-      .chunks(U16_SIZE)
-      .map(|mut chunk| chunk.get_u16())
-      .collect();
+    let offsets = encoding[offsets_start_at..entry_count_starts_at].chunks(U16_SIZE)
+                                                                   .map(|mut chunk| chunk.get_u16())
+                                                                   .collect();
 
     // Get the (raw) entries.
     let raw_entries = encoding[0..offsets_start_at].to_vec();
 
-    Self {
-      raw_entries,
-      offsets,
-    }
+    Self { raw_entries,
+           offsets }
   }
 }

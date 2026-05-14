@@ -1,5 +1,5 @@
 use crate::engine::{
-  iterator::merge_iterator::MergeIterator, memtable::iterator::MemtableIterator,
+  iterator::merge_iterator::MergeIterator, memtable::iterator::MemtableIterator
 };
 
 pub mod fused_iterator;
@@ -27,7 +27,7 @@ pub trait Iterator {
 pub type MemtablesIterator = MergeIterator<MemtableIterator>;
 
 pub struct EngineIterator {
-  memtables_iterator: MemtablesIterator,
+  memtables_iterator: MemtablesIterator
 }
 
 impl EngineIterator {

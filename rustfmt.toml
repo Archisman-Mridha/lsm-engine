@@ -1,13 +1,19 @@
-group_imports = "One"
-imports_granularity = "One"
+style_edition = "2024"
+unstable_features = true
 
 tab_spaces = 2
 
-max_width = 100
 comment_width = 100
 
+indent_style = "Visual"
+
+use_small_heuristics = "Off"
+wrap_comments = true
+
+group_imports = "One"
+imports_granularity = "One"
+
+struct_field_align_threshold = 80
 use_field_init_shorthand = true
 
-control_brace_style = "ClosingNextLine"
-
-struct_field_align_threshold = 60
+trailing_comma = "Never"

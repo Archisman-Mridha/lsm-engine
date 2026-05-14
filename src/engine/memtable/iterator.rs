@@ -3,7 +3,7 @@ use {
   bytes::Bytes,
   crossbeam_skiplist::SkipMap,
   ouroboros::self_referencing,
-  std::{ops::Bound, sync::Arc},
+  std::{ops::Bound, sync::Arc}
 };
 
 type SkipMapRangeIterator<'a> =
@@ -11,7 +11,7 @@ type SkipMapRangeIterator<'a> =
 
 #[self_referencing(pub_extras)]
 pub struct MemtableIterator {
-  // Instead of doing "skip_map: &'skipMap SkipMap<Bytes, Bytes>", we do the following,
+  // Instead of doing "skip_map: &'skip_map SkipMap<Bytes, Bytes>", we do the following,
   // to avoid complications coming with the lifetime usage. This will also improve the
   // compile time.
   pub skip_map: Arc<SkipMap<Bytes, Bytes>>,
@@ -22,9 +22,8 @@ pub struct MemtableIterator {
   pub skip_map_iterator: SkipMapRangeIterator<'this>,
 
   // key-value pair the iterator's cursor is currently pointing to.
-  //
-  // If the key and value are empty bytes, that means the iterator is invalid.
-  pub current_kv_pair: (Bytes, Bytes),
+  // When the key and value are empty bytes, that means the iterator is invalid.
+  pub current_kv_pair: (Bytes, Bytes)
 }
 
 impl Iterator for MemtableIterator {
@@ -38,18 +37,18 @@ impl Iterator for MemtableIterator {
 
   fn next(&mut self) -> anyhow::Result<()> {
     let kv_pair = self.with_skip_map_iterator_mut(|skip_map_iterator| {
-      skip_map_iterator
-        .next()
-        .map(|skip_map_entry| {
-          // Convert the SkipMap entry to a key-value pair.
-          (skip_map_entry.key().clone(), skip_map_entry.value().clone())
-        })
-        .unwrap_or_else(|| (Bytes::new(), Bytes::new()))
-    });
+                        skip_map_iterator.next()
+                                         .map(|skip_map_entry| {
+                                           // Convert the SkipMap entry to a key-value pair.
+                                           (skip_map_entry.key().clone(),
+                                            skip_map_entry.value().clone())
+                                         })
+                                         .unwrap_or_else(|| (Bytes::new(), Bytes::new()))
+                      });
 
     self.with_mut(|memtable_iterator| {
-      *memtable_iterator.current_kv_pair = kv_pair;
-    });
+          *memtable_iterator.current_kv_pair = kv_pair;
+        });
 
     Ok(())
   }

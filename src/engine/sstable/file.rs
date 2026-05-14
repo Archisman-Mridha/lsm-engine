@@ -1,7 +1,7 @@
 use std::{
   fs::File,
   os::unix::fs::{FileExt, MetadataExt},
-  path::Path,
+  path::Path
 };
 
 pub struct SSTableFile(File);

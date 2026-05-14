@@ -4,7 +4,7 @@ use crate::engine::iterator::Iterator;
 // It is similar to the FusedIterator provided by Rust's standard library :
 // .next() continues to yield None, when the underlying iterator points to invalid data.
 pub struct FusedIterator<I: Iterator> {
-  iterator: I,
+  iterator: I
 }
 
 impl<I: Iterator> FusedIterator<I> {
@@ -23,7 +23,7 @@ impl<I: Iterator> FusedIterator<I> {
         Some(kv_pair)
       }
 
-      _ => None,
+      _ => None
     }
   }
 }

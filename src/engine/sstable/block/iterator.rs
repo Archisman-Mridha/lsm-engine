@@ -1,10 +1,10 @@
 use {
   crate::engine::{
     iterator::Iterator,
-    sstable::block::{Block, U16_SIZE},
+    sstable::block::{Block, U16_SIZE}
   },
   bytes::Buf,
-  std::{cmp::Ordering, sync::Arc},
+  std::{cmp::Ordering, sync::Arc}
 };
 
 pub struct BlockIterator {
@@ -18,18 +18,16 @@ pub struct BlockIterator {
   current_key:         Vec<u8>,
   //
   // And this is the byte range of the value of that entry in self.block.raw_entries.
-  current_value_range: (usize, usize),
+  current_value_range: (usize, usize)
 }
 
 impl BlockIterator {
   pub fn new(block: Arc<Block>) -> Self {
-    Self {
-      block,
+    Self { block,
 
-      current_index: 0,
-      current_key: Vec::new(),
-      current_value_range: (0, 0),
-    }
+           current_index: 0,
+           current_key: Vec::new(),
+           current_value_range: (0, 0) }
   }
 
   // Seeks to the first key >= the given target key.
@@ -49,7 +47,7 @@ impl BlockIterator {
         Ordering::Equal => return,
 
         Ordering::Less => upper_index = mid_index - 1,
-        Ordering::Greater => lower_index = mid_index + 1,
+        Ordering::Greater => lower_index = mid_index + 1
       }
     }
 

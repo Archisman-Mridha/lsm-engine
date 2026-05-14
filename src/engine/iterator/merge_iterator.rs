@@ -3,8 +3,8 @@ use {
   std::{
     cmp::Ordering,
     collections::{BinaryHeap, binary_heap::PeekMut},
-    mem,
-  },
+    mem
+  }
 };
 
 // Merge the results returned by multiple (Memtable) iterators
@@ -15,42 +15,37 @@ use {
 //
 // NOTE : We want to avoid dynamic dispatch, so we use static dispatch using generics.
 pub struct MergeIterator<I: Iterator> {
+  // This is a binary min-heap.
+  // So, iterator with the lowest head key value is first.
+  // When multiple iterators have the same head key value, the newest one is first.
   binary_min_heap: BinaryHeap<BinaryMinHeapNodeData<I>>,
-  popped_node:     Option<BinaryMinHeapNodeData<I>>,
+
+  popped_node: Option<BinaryMinHeapNodeData<I>>
 }
 
 impl<I: Iterator> MergeIterator<I> {
   pub fn new(iterators: Vec<I>) -> Self {
     // Filter out invalid iterators.
-    let iterators: Vec<I> = iterators
-      .into_iter()
-      .filter(|iterator| iterator.is_valid())
-      .collect();
+    let iterators: Vec<I> = iterators.into_iter().filter(|iterator| iterator.is_valid()).collect();
 
     let mut binary_min_heap = BinaryHeap::new();
 
     if iterators.is_empty() {
-      return Self {
-        binary_min_heap,
-        popped_node: None,
-      };
+      return Self { binary_min_heap,
+                    popped_node: None };
     }
 
     // Populate the binary min-heap.
     for (iterator_index, iterator) in iterators.into_iter().enumerate() {
-      binary_min_heap.push(BinaryMinHeapNodeData {
-        iterator_index,
-        iterator,
-      });
+      binary_min_heap.push(BinaryMinHeapNodeData { iterator_index,
+                                                   iterator });
     }
 
     // Pop off the root node of the binary min-heap.
     let popped_node = binary_min_heap.pop().unwrap();
 
-    Self {
-      binary_min_heap,
-      popped_node: Some(popped_node),
-    }
+    Self { binary_min_heap,
+           popped_node: Some(popped_node) }
   }
 }
 
@@ -83,7 +78,7 @@ impl<I: Iterator> Iterator for MergeIterator<I> {
         // So, we'll remove the iterator from the binary min-heap.
         match result {
           Ok(_) => {
-            if child_node.iterator.is_valid() {
+            if !child_node.iterator.is_valid() {
               PeekMut::pop(child_node);
             }
           }
@@ -93,8 +88,7 @@ impl<I: Iterator> Iterator for MergeIterator<I> {
             return Err(error);
           }
         }
-      }
-      else {
+      } else {
         break;
       }
     }
@@ -127,20 +121,13 @@ impl<I: Iterator> Iterator for MergeIterator<I> {
   }
 
   fn is_valid(&self) -> bool {
-    self
-      .popped_node
-      .as_ref()
-      .map(|popped_node| popped_node.iterator.is_valid())
-      .unwrap_or(false)
+    self.popped_node.as_ref().map(|popped_node| popped_node.iterator.is_valid()).unwrap_or(false)
   }
 }
 
-// This is a binary min-heap.
-// So, iterator with the lowest head key value is first.
-// When multiple iterators have the same head key value, the newest one is first.
 struct BinaryMinHeapNodeData<I: Iterator> {
   iterator_index: usize,
-  iterator:       I,
+  iterator:       I
 }
 
 impl<I: Iterator> PartialOrd for BinaryMinHeapNodeData<I> {
@@ -155,11 +142,11 @@ impl<I: Iterator> Ord for BinaryMinHeapNodeData<I> {
       Ordering::Greater => Ordering::Greater,
       Ordering::Less => Ordering::Less,
 
-      Ordering::Equal => self.iterator_index.cmp(&other.iterator_index),
+      Ordering::Equal => self.iterator_index.cmp(&other.iterator_index)
     }
-    // NOTE : Since, the standard library's BinaryHeap is a max-heap,
-    //        we reverse the ordering, to get a min-heap.
-    .reverse()
+     // NOTE : Since, the standard library's BinaryHeap is a max-heap,
+     //        we reverse the ordering, to get a min-heap.
+     .reverse()
   }
 }
 

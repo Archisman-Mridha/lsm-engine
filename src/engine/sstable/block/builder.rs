@@ -1,22 +1,20 @@
 use {
   crate::engine::sstable::block::{Block, U16_SIZE},
   anyhow::bail,
-  bytes::BufMut,
+  bytes::BufMut
 };
 
 pub struct BlockBuilder {
   raw_entries:    Vec<u8>,
   offsets:        Vec<u16>,
-  max_block_size: usize,
+  max_block_size: usize
 }
 
 impl BlockBuilder {
   pub fn new(max_block_size: usize) -> Self {
-    Self {
-      raw_entries: Vec::new(),
-      offsets: Vec::new(),
-      max_block_size,
-    }
+    Self { raw_entries: Vec::new(),
+           offsets: Vec::new(),
+           max_block_size }
   }
 
   pub fn current_block_size(&self) -> usize {
@@ -54,9 +52,7 @@ impl BlockBuilder {
       panic!("Block has no entries. Consider an increased maximum block size.");
     }
 
-    Block {
-      raw_entries: self.raw_entries,
-      offsets:     self.offsets,
-    }
+    Block { raw_entries: self.raw_entries,
+            offsets:     self.offsets }
   }
 }

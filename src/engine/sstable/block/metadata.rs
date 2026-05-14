@@ -1,7 +1,7 @@
 use {
   crate::engine::sstable::block::U16_SIZE,
   bytes::{Buf, BufMut, Bytes},
-  std::mem,
+  std::mem
 };
 
 pub const U64_SIZE: usize = mem::size_of::<u64>();
@@ -11,7 +11,7 @@ pub struct BlockMetadata {
   pub offset: u64,
 
   pub first_key: Bytes,
-  pub last_key:  Bytes,
+  pub last_key:  Bytes
 }
 
 impl BlockMetadata {
@@ -41,11 +41,9 @@ impl BlockMetadata {
     let last_key_size = buffer.get_u16() as usize;
     let last_key = buffer.copy_to_bytes(last_key_size);
 
-    Self {
-      offset,
+    Self { offset,
 
-      first_key,
-      last_key,
-    }
+           first_key,
+           last_key }
   }
 }
